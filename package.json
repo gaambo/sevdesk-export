@@ -1,0 +1,38 @@
+{
+  "name": "sevdesk-export",
+  "version": "1.0.0",
+  "description": "Exportiert bezahlte Belege eines Monats als PDF",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gaambo/sevdesk-export.git"
+  },
+  "keywords": [
+    "sevdesk"
+  ],
+  "author": "Fabian Todt <mail@fabiantodt.at>",
+  "license": "GPL-3.0-or-later",
+  "bugs": {
+    "url": "https://github.com/gaambo/sevdesk-export/issues"
+  },
+  "homepage": "https://github.com/gaambo/sevdesk-export#readme",
+  "dependencies": {
+    "axios": "^0.26.0",
+    "commander": "^9.0.0",
+    "dotenv": "^16.0.0",
+    "esm": "^3.2.25",
+    "ora": "^6.1.0",
+    "sanitize-filename": "^1.6.3"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "main": "bin/index.mjs",
+  "type": "module",
+  "bin": {
+    "sevdesk-export": "./bin/index.mjs"
+  },
+  "scripts": {
+    "run": "node -r ./bin/index.mjs",
+    "debug": "node -r ./src/index.mjs"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "configurations": [
+      {
+          "type": "node",
+          "name": "Launch via Node",
+          "request": "launch",
+          "cwd": "${workspaceFolder}",
+          "runtimeArgs": ["."],
+      }
+  ]
+}
