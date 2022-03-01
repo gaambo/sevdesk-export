@@ -68,6 +68,10 @@ const main = async () => {
   let vouchers, documents, savedFiles;
   try {
     vouchers = await getVouchers(startDate, endDate, apiToken);
+    if (!vouchers.length) {
+      getSpinner.info("Keine Belege gefunden");
+      return;
+    }
     getSpinner.succeed();
   } catch (err) {
     getSpinner.fail(`Fehler bei den Belegdaten von sevDesk: ${err.message}`);
@@ -77,6 +81,10 @@ const main = async () => {
   const downloadSpinner = ora("Lade PDFs von sevDesk").start();
   try {
     documents = await downloadVouchers(vouchers, apiToken);
+    if (!documents.length) {
+      downloadSpinner.info("Keine PDFs gefunden");
+      return;
+    }
     downloadSpinner.succeed();
   } catch (err) {
     downloadSpinner.fail(`Fehler beim Laden der PDFs: ${err.message}`);
@@ -86,6 +94,10 @@ const main = async () => {
   const saveSpinner = ora("Speichere PDFs im Ordner").start();
   try {
     savedFiles = await saveVouchers(documents, exportDir);
+    if (!savedFiles.length) {
+      saveSpinner.info("Keine PDFs gespeichert");
+      return;
+    }
     saveSpinner.succeed();
   } catch (err) {
     saveSpinner.fail(`Fehler beim Speichern der PDFs: ${err.message}`);
