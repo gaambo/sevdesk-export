@@ -37,26 +37,26 @@ const deleteAllFilesInDirectory = async (directory) => {
 };
 
 /**
- * Builds a well-readable and unique filename from a voucher
+ * Builds a well-readable and unique filename from a voucher/invoice document
  * consisting of the payDate (sortable), supplier/customer name and the unique document id
  *
- * @param {Object} voucher from @see downloadVouchers/@see downloadVoucher
+ * @param {Object} document from @see downloadDocuments/@see downloadDocument
  * @returns {string} filename
  */
-const buildVoucherFileName = (voucher, extension = ".pdf") => {
+const buildDocumentFileName = (document, extension = ".pdf") => {
   const filenameParts = [];
-  if (voucher.payDate) {
-    filenameParts.push(dateToString(voucher.payDate));
+  if (document.payDate) {
+    filenameParts.push(dateToString(document.payDate));
   }
-  if (voucher.name && voucher.name !== "") {
-    filenameParts.push(voucher.name);
+  if (document.name && document.name !== "") {
+    filenameParts.push(document.name);
   }
-  if (voucher.id) {
-    filenameParts.push(voucher.id); // make it unique
+  if (document.id) {
+    filenameParts.push(document.id); // make it unique
   }
 
   let filename = filenameParts.join("-") + extension;
   return filename;
 };
 
-export { dateToString, deleteAllFilesInDirectory, buildVoucherFileName };
+export { dateToString, deleteAllFilesInDirectory, buildDocumentFileName };

@@ -1,10 +1,10 @@
 import ora from "ora";
 import { program } from "commander";
 import "dotenv/config";
-import { downloadVouchers, getVouchers } from "./sevdesk.mjs";
+import { getVouchers, getInvoices, downloadDocuments } from "./sevdesk.mjs";
 import { dateToString, deleteAllFilesInDirectory } from "./helper.mjs";
 import path from "path";
-import { saveVouchers } from "./files.mjs";
+import { saveDocuments } from "./files.mjs";
 
 const main = async () => {
   const today = new Date();
@@ -52,6 +52,10 @@ const main = async () => {
   const deletExisting = options.delete;
   const apiToken = options.apiToken;
 
+  /**
+   * 1. delete existing files
+   */
+
   if (deletExisting) {
     const deleteSpinner = ora("Lösche bestehende Dateien").start();
     const deleteResult = await deleteAllFilesInDirectory(exportDir);
@@ -64,6 +68,9 @@ const main = async () => {
     ora("Lösche keine bestehenden Dateien").info();
   }
 
+  /**
+   * 2. get, download and save VOUCHERS
+   */
   const getSpinner = ora("Hole Belegdaten von sevDesk").start();
   let vouchers, documents, savedFiles;
   try {
@@ -78,35 +85,90 @@ const main = async () => {
     return;
   }
 
-  const downloadSpinner = ora("Lade PDFs von sevDesk").start();
+  const downloadSpinner = ora("Lade Beleg-PDFs von sevDesk").start();
   try {
-    documents = await downloadVouchers(vouchers, apiToken);
+    documents = await downloadDocuments("vouchers", vouchers, apiToken);
     if (!documents.length) {
-      downloadSpinner.info("Keine PDFs gefunden");
+      downloadSpinner.info("Keine Beleg-PDFs gefunden");
       return;
     }
     downloadSpinner.succeed();
   } catch (err) {
-    downloadSpinner.fail(`Fehler beim Laden der PDFs: ${err.message}`);
+    downloadSpinner.fail(`Fehler beim Laden der Beleg-PDFs: ${err.message}`);
     return;
   }
 
-  const saveSpinner = ora("Speichere PDFs im Ordner").start();
+  const saveSpinner = ora("Speichere Beleg-PDFs im Ordner").start();
   try {
-    savedFiles = await saveVouchers(documents, exportDir);
+    savedFiles = await saveDocuments(documents, exportDir);
     if (!savedFiles.length) {
-      saveSpinner.info("Keine PDFs gespeichert");
+      saveSpinner.info("Keine Beleg-PDFs gespeichert");
       return;
     }
     saveSpinner.succeed();
   } catch (err) {
-    saveSpinner.fail(`Fehler beim Speichern der PDFs: ${err.message}`);
+    saveSpinner.fail(`Fehler beim Speichern der Beleg-PDFs: ${err.message}`);
     return;
   }
   if (savedFiles) {
     savedFiles = savedFiles.filter((f) => f);
     ora(
       `${savedFiles.length} Belege wurden heruntergeladen und in ${exportDir} gespeichert`
+    ).succeed();
+  }
+
+  /**
+   * 2. get, download and save INVOICES
+   */
+  const getInvoicesSpinner = ora("Hole Rechnungen von sevDesk").start();
+  let invoices, invoiceDocuments, savedInvoiceFiles;
+  try {
+    invoices = await getInvoices(startDate, endDate, apiToken);
+    if (!invoices.length) {
+      getInvoicesSpinner.info("Keine Rechnungen gefunden");
+      return;
+    }
+    getInvoicesSpinner.succeed();
+  } catch (err) {
+    getInvoicesSpinner.fail(
+      `Fehler bei den Rechnungen von sevDesk: ${err.message}`
+    );
+    return;
+  }
+
+  const downloadInvoicesSpinner = ora("Lade Rechnung-PDFs von sevDesk").start();
+  try {
+    invoiceDocuments = await downloadDocuments("invoices", invoices, apiToken);
+    if (!invoiceDocuments.length) {
+      downloadInvoicesSpinner.info("Keine Rechnung-PDFs gefunden");
+      return;
+    }
+    downloadInvoicesSpinner.succeed();
+  } catch (err) {
+    downloadInvoicesSpinner.fail(
+      `Fehler beim Laden der Rechnung-PPDFs: ${err.message}`
+    );
+    return;
+  }
+
+  const saveInvoicesSpinner = ora("Speichere Rechnung-PDFs im Ordner").start();
+  try {
+    savedInvoiceFiles = await saveDocuments(invoiceDocuments, exportDir);
+    if (!savedInvoiceFiles.length) {
+      saveInvoicesSpinner.info("Keine Rechnung-PDFs gespeichert");
+      return;
+    }
+    saveInvoicesSpinner.succeed();
+  } catch (err) {
+    saveInvoicesSpinner.fail(
+      `Fehler beim Speichern der Rechnung-PDFs: ${err.message}`
+    );
+    return;
+  }
+  if (savedInvoiceFiles) {
+    savedInvoiceFiles = savedInvoiceFiles.filter((f) => f);
+    ora(
+      `${savedInvoiceFiles.length} Rechnungen wurden heruntergeladen und in ${exportDir} gespeichert`
     ).succeed();
   }
 };

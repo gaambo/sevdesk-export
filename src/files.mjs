@@ -1,43 +1,43 @@
 import { promises as fs } from "fs";
 import path from "path";
 import sanitize from "sanitize-filename";
-import { buildVoucherFileName } from "./helper.mjs";
+import { buildDocumentFileName } from "./helper.mjs";
 
 /**
- * Saves downloaded voucher data from @see downloadVouchers to disk
+ * Saves downloaded voucher/invoice data from @see downloadDocuments to disk
  *
- * @param {Array} vouchers
+ * @param {Array} document
  * @param {string} savePath
- * @returns number of saved vouchers
+ * @returns number of saved documents
  */
-const saveVouchers = async (vouchers, savePath) => {
+const saveDocuments = async (documents, savePath) => {
   return Promise.all(
-    vouchers.map((voucher) => {
-      return saveVoucher(voucher, savePath);
+    documents.map((document) => {
+      return saveDocument(document, savePath);
     })
   );
 };
 
 /**
- * Private. Saves a single voucher
- * @see saveVoucher
+ * Private. Saves a single document
+ * @see saveDocuments
  *
- * @param {Object} voucher
+ * @param {Object} document
  * @param {string} savePath
  * @returns
  */
-const saveVoucher = async (voucher, savePath) => {
-  if (!voucher) {
+const saveDocument = async (document, savePath) => {
+  if (!document) {
     return null;
   }
-  let filename = buildVoucherFileName(voucher);
+  let filename = buildDocumentFileName(document);
   filename = sanitize(filename);
   try {
-    await fs.writeFile(path.join(savePath, filename), voucher.document);
+    await fs.writeFile(path.join(savePath, filename), document.document);
     return 1;
   } catch (err) {
     return 0;
   }
 };
 
-export { saveVouchers };
+export { saveDocuments };
