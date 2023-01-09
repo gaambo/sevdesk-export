@@ -25,6 +25,7 @@ Mit `npm install -g .` kann das Skript global verfügbar gemacht werden und somi
 `--end`: Enddatum (YYYY-MM-DD) *(Standard: Letzter Tag des letzten Monats)* 
 `--dir`: Export-Verzeichnis *(Standard: Verzeichnis "export" im ausführenden Verzeichnis)* 
 `--delete`: Ob bestehende Dateien im Export-Verzeichnis gelöscht werden sollen *(Standard: Falsch)* 
+`--report`: Ob ein Journal/Report im CSV-Format erstellt werden soll *(Standard: Falsch)* 
 `--api-token`: Der API-Token für sevDesk (siehe [Infos](#sevdesk-api)).
 
 ### Beispiel Aufruf: 

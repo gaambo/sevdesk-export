@@ -1,4 +1,5 @@
 import axios from "axios";
+import { buildDocumentFileName, dateToString } from "./helper.mjs";
 
 /**
  * Make a call to the sevDesk API
@@ -20,6 +21,7 @@ const makeApiCall = (path, apiToken, config = {}) => {
 
 /**
  * Returns all vouchers in a specific payDate-range
+ * including supplier and positions data
  *
  * @param {Date} startDate
  * @param {Date} endDate
@@ -32,20 +34,53 @@ const getVouchers = async (startDate, endDate, apiToken) => {
       params: {
         startPayDate: startDate.getTime() / 1000,
         endPayDate: endDate.getTime() / 1000,
+        embed: "supplier"
       },
     });
-
-    return result.data.objects;
+    const vouchers = await Promise.all(result.data.objects.map(async (voucher) => {
+      const positions = await getVoucherPositions(voucher.id, apiToken);
+      return {
+        ...voucher,
+        positions: positions
+      }
+    }));
+    return vouchers;
   } catch (err) {
     throw new Error(err.message);
   }
 };
 
 /**
+ * Returns all voucher positions for a specific voucher
+ * including the accounting type information (= buchhaltungskonto)
+ * 
+ * @param {string} voucherId 
+ * @param {string} apiToken 
+ * @returns {Array} Voucher position objects as defined in sevDesk API
+ */
+const getVoucherPositions = async(voucherId, apiToken) => {
+  try {
+    const result = await makeApiCall("VoucherPos", apiToken, {
+      params:{
+        "voucher[id]": voucherId,
+        "voucher[objectName]": "Voucher",
+        "embed": "accountingType"
+      }
+    });
+    return result.data.objects;
+  } catch(err) {
+    // return empty set
+  }
+  return [];
+}
+
+/**
  * Returns all invoices in a specific payDate-range
  * sevDesk API does not allow filtering invoices by payDate
  * therefore geht invoices from the range and the range before that
  * and than manually filter by payDate, this should be enough to get most invoices
+ * 
+ * include contact data
  *
  * @param {Date} startPayDate
  * @param {Date} endPayDate
@@ -60,6 +95,7 @@ const getInvoices = async (startPayDate, endPayDate, apiToken) => {
       params: {
         startDate: startDate.getTime() / 1000,
         endDate: endPayDate.getTime() / 1000,
+        embed: "contact",
       },
     });
 
@@ -108,7 +144,7 @@ const downloadDocuments = async (objectType, objects, apiToken) => {
  *
  * @param {string} type of object ("vouchers" or "invoices")
  * @param {Object} voucher (@see getVouchers) or invoices (@see getInvoices)
- * @returns {Object} PDF Buffer Data and meta data (payDate, supplierName, documentId)
+ * @returns {Object} PDF Buffer Data and document name
  */
 const downloadDocument = async (objectType, object, apiToken) => {
   try {
@@ -135,22 +171,80 @@ const downloadDocument = async (objectType, object, apiToken) => {
     if (document.base64Encoded) {
       content = Buffer.from(content, "base64");
     }
-    let name = "";
-    if (objectType === "vouchers") {
-      name = object.supplierName || object.supplierNameAtSave || "";
-    } else if (objectType === "invoices") {
-      name = object.addressName || "";
-    }
 
     return {
       document: content,
-      payDate: object.payDate ? new Date(object.payDate) : null,
-      name: name,
-      id: object.id,
+      filename: getDocumentFileName(object, objectType)
     };
   } catch (err) {
     return null;
   }
 };
 
-export { getVouchers, getInvoices, downloadDocuments };
+const getDocumentFileName = (object, objectType) => {
+  const payDate = object.payDate ? new Date(object.payDate) : null;
+  let name = "";
+  if (objectType === "vouchers") {
+    name = object.supplierName || object.supplierNameAtSave || "";
+  } else if (objectType === "invoices") {
+    name = object.addressName || "";
+  }
+
+  const fileName = buildDocumentFileName(payDate, name, object.id);
+  return fileName;
+}
+
+/**
+ * Gets information about all vouchers (date, amount, contact name, categories, filename)
+ * to be used in a report/journal
+ * 
+ * @param {Array} Vouchers from @see getVouchers
+ * @returns {Array} data used for exporting a report
+ */
+const buildVoucherReportData = (vouchers) => {
+  const reportData = [];
+  vouchers.forEach(voucher => {
+    const accountingPositions = voucher.positions.map(position => {
+      return position.accountingType.name || "";
+    });
+    const payDate = new Date(voucher.payDate);
+    reportData.push({
+      type: "AR",
+      date: new Date(voucher.voucherDate),
+      number: voucher.description,
+      contact: voucher.supplierNameAtSave || voucher.supplierName || voucher.supplier.name || "",
+      payDate: payDate,
+      paidAmount: voucher.paidAmount,
+      categories: accountingPositions,
+      filename: getDocumentFileName(voucher, "vouchers")
+    });
+  });
+  return reportData;
+}
+
+/**
+ * Gets information about all invoices (date, amount, contact name, categories, filename)
+ * to be used in a report/journal
+ * 
+ * @param {Array} Invoices from @see getInvoices
+ * @returns {Array} data used for exporting a report
+ */
+const buildInvoiceReportData = (invoices) => {
+  const reportData = [];
+  invoices.forEach(invoice => {
+    const payDate = new Date(invoice.payDate);
+    reportData.push({
+      type: "ER",
+      date: new Date(invoice.invoiceDate),
+      number: invoice.invoiceNumber,
+      contact: invoice.addressName || invoice.contact.name || "",
+      payDate: payDate,
+      paidAmount: invoice.paidAmount,
+      categories: [],
+      filename: getDocumentFileName(invoice, "invoices")
+    });
+  });
+  return reportData;
+}
+
+export { getVouchers, getInvoices, downloadDocuments, buildVoucherReportData, buildInvoiceReportData };

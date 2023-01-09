@@ -18,6 +18,7 @@
   "dependencies": {
     "axios": "^0.26.0",
     "commander": "^9.0.0",
+    "csv-stringify": "^6.2.3",
     "dotenv": "^16.0.0",
     "esm": "^3.2.25",
     "ora": "^6.1.0",

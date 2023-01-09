@@ -1,10 +1,10 @@
 import ora from "ora";
 import { program } from "commander";
 import "dotenv/config";
-import { getVouchers, getInvoices, downloadDocuments } from "./sevdesk.mjs";
+import { getVouchers, getInvoices, downloadDocuments, buildVoucherReportData, buildInvoiceReportData } from "./sevdesk.mjs";
 import { dateToString, deleteAllFilesInDirectory } from "./helper.mjs";
 import path from "path";
-import { saveDocuments } from "./files.mjs";
+import { saveDocuments, writeReportCSV } from "./files.mjs";
 
 const main = async () => {
   const today = new Date();
@@ -33,6 +33,11 @@ const main = async () => {
       false
     )
     .option(
+      "-r, --report",
+      "Fügt einen Bericht mit Infos zu allen exportierten Dateien an (csv)",
+      false
+    )
+    .option(
       "--api-token",
       "API-Token für sevDesk. Einstellungen > Benutzer > API-Token. Alternativ auch via `.env` möglich",
       process.env.SEVDESK_API_KEY
@@ -50,7 +55,10 @@ const main = async () => {
   endDate = new Date(options.end);
   const exportDir = options.dir;
   const deletExisting = options.delete;
+  const exportReport = options.report;
   const apiToken = options.apiToken;
+
+  const reportData = [];
 
   /**
    * 1. delete existing files
@@ -115,6 +123,11 @@ const main = async () => {
     ora(
       `${savedFiles.length} Belege wurden heruntergeladen und in ${exportDir} gespeichert`
     ).succeed();
+
+    if(exportReport) {
+      const voucherReportData = buildVoucherReportData(vouchers);
+      reportData.push(...voucherReportData);
+    }
   }
 
   /**
@@ -170,6 +183,16 @@ const main = async () => {
     ora(
       `${savedInvoiceFiles.length} Rechnungen wurden heruntergeladen und in ${exportDir} gespeichert`
     ).succeed();
+
+    if(exportReport) {
+      const invoiceReportData = buildInvoiceReportData(invoices);
+      reportData.push(...invoiceReportData);
+    }
+  }
+
+  if(exportReport) {
+    writeReportCSV(reportData, exportDir);
+    ora(`Journal wurde in journal.csv gespeichert`).succeed();
   }
 };
 main();

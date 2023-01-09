@@ -1,7 +1,8 @@
+import { stringify } from "csv-stringify/sync";
 import { promises as fs } from "fs";
 import path from "path";
 import sanitize from "sanitize-filename";
-import { buildDocumentFileName } from "./helper.mjs";
+import { dateToString } from "./helper.mjs";
 
 /**
  * Saves downloaded voucher/invoice data from @see downloadDocuments to disk
@@ -30,8 +31,7 @@ const saveDocument = async (document, savePath) => {
   if (!document) {
     return null;
   }
-  let filename = buildDocumentFileName(document);
-  filename = sanitize(filename);
+  const filename = sanitize(document.filename);
   try {
     await fs.writeFile(path.join(savePath, filename), document.document);
     return 1;
@@ -40,4 +40,70 @@ const saveDocument = async (document, savePath) => {
   }
 };
 
-export { saveDocuments };
+/**
+ * Writes journal/report data to a csv file
+ * 
+ * @param {Array} reportData 
+ * @param {string} savePath 
+ * @returns 
+ */
+const writeReportCSV = async(reportData, savePath) => {
+  const filename = "journal.csv";
+
+  const data = reportData.map(entry => {
+    return {
+      ...entry,
+      date: dateToString(entry.date),
+      payDate: dateToString(entry.payDate),
+      categories: Array.isArray(entry.categories) ? entry.categories.join(", ") : "",
+      paidAmount: entry.paidAmount.toLocaleString("de"),
+    };
+  });
+  const output = stringify(data, {
+    header: true,
+    columns: [
+      {
+        key: "type",
+        header: "Typ"
+      },
+      {
+        key: "date",
+        header: "Rechnungs-/Belegdatum"
+      },
+      {
+        key: "number",
+        header: "Nummer"
+      },
+      {
+        key: "contact",
+        header: "Kunde/Lieferant"
+      },
+      {
+        key: "payDate",
+        header: "Zahlung Datum"
+      },
+      {
+        key: "paidAmount",
+        header: "Zahlung Summe"
+      },
+      {
+        key: "categories",
+        header: "Kategorie"
+      },
+      {
+        key: "filename",
+        header: "Dateiname"
+      },
+    ]
+  });
+
+
+  try {
+    await fs.writeFile(path.join(savePath, filename), output);
+    return 1;
+  } catch(err) {
+    return 0;
+  }
+};
+
+export { saveDocuments, writeReportCSV };

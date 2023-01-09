@@ -43,16 +43,16 @@ const deleteAllFilesInDirectory = async (directory) => {
  * @param {Object} document from @see downloadDocuments/@see downloadDocument
  * @returns {string} filename
  */
-const buildDocumentFileName = (document, extension = ".pdf") => {
+const buildDocumentFileName = (payDate, name, id, extension = ".pdf") => {
   const filenameParts = [];
-  if (document.payDate) {
-    filenameParts.push(dateToString(document.payDate));
+  if (payDate) {
+    filenameParts.push(dateToString(payDate));
   }
-  if (document.name && document.name !== "") {
-    filenameParts.push(document.name);
+  if (name && name !== "") {
+    filenameParts.push(name);
   }
-  if (document.id) {
-    filenameParts.push(document.id); // make it unique
+  if (id) {
+    filenameParts.push(id); // make it unique
   }
 
   let filename = filenameParts.join("-") + extension;
