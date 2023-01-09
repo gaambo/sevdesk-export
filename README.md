@@ -42,3 +42,10 @@ Außerdem kann der API-Token auch als globale Umgebungsvariable gespeichert werd
 Dieses Programm wird ohne Haftung und Gewährleistung übermittelt. Es werden nur Daten von der sevDesk-API gelesen und lokal verarbeitet. Es werden **keine** Daten in sevDesk geschrieben/verändert oder übermittelt.
 
 Dieses Programm steht in keinem Zusammenhang mit sevDesk und wird nicht von sevDesk entwickelt oder betrieben.
+
+## Changelog
+
+### v1.2.0
+
+- Bericht/Journal-Funktionalität hinzugefügt
+- Nicht-PDFs werden nun korrekt gespeichert
