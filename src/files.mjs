@@ -31,7 +31,7 @@ const saveDocument = async (document, savePath) => {
   if (!document) {
     return null;
   }
-  const filename = sanitize(document.filename);
+  const filename = sanitize(document.fileName);
   try {
     await fs.writeFile(path.join(savePath, filename), document.document);
     return 1;

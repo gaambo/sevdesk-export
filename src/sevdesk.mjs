@@ -34,7 +34,7 @@ const getVouchers = async (startDate, endDate, apiToken) => {
       params: {
         startPayDate: startDate.getTime() / 1000,
         endPayDate: endDate.getTime() / 1000,
-        embed: "supplier"
+        embed: "supplier,document"
       },
     });
     const vouchers = await Promise.all(result.data.objects.map(async (voucher) => {
@@ -95,7 +95,7 @@ const getInvoices = async (startPayDate, endPayDate, apiToken) => {
       params: {
         startDate: startDate.getTime() / 1000,
         endDate: endPayDate.getTime() / 1000,
-        embed: "contact",
+        embed: "contact,document",
       },
     });
 
@@ -172,16 +172,21 @@ const downloadDocument = async (objectType, object, apiToken) => {
       content = Buffer.from(content, "base64");
     }
 
+    let extension = "pdf";
+    if(document.filename.split(".").pop() !== document.filename) {
+      extension = document.filename.split(".").pop();
+    }
+
     return {
       document: content,
-      filename: getDocumentFileName(object, objectType)
+      fileName: getDocumentFileName(object, objectType, extension),
     };
   } catch (err) {
     return null;
   }
 };
 
-const getDocumentFileName = (object, objectType) => {
+const getDocumentFileName = (object, objectType, extension = "pdf") => {
   const payDate = object.payDate ? new Date(object.payDate) : null;
   let name = "";
   if (objectType === "vouchers") {
@@ -190,7 +195,11 @@ const getDocumentFileName = (object, objectType) => {
     name = object.addressName || "";
   }
 
-  const fileName = buildDocumentFileName(payDate, name, object.id);
+  if(object.document && object.document.extension) {
+    extension = object.document.extension;
+  }
+
+  const fileName = buildDocumentFileName(payDate, name, object.id, extension);
   return fileName;
 }
 

@@ -55,7 +55,7 @@ const buildDocumentFileName = (payDate, name, id, extension = ".pdf") => {
     filenameParts.push(id); // make it unique
   }
 
-  let filename = filenameParts.join("-") + extension;
+  let filename = filenameParts.join("-") + `.${extension}`;
   return filename;
 };
 
