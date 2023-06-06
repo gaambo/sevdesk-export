@@ -8,13 +8,13 @@ import { dateToString } from "./helper.mjs";
  * Saves downloaded voucher/invoice data from @see downloadDocuments to disk
  *
  * @param {Array} document
- * @param {string} savePath
+ * @param {object} options
  * @returns number of saved documents
  */
-const saveDocuments = async (documents, savePath) => {
+const saveDocuments = async (documents, { dir }) => {
   return Promise.all(
     documents.map((document) => {
-      return saveDocument(document, savePath);
+      return saveDocument(document, dir);
     })
   );
 };

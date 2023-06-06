@@ -1,5 +1,6 @@
 import axios from "axios";
 import sanitizeFilename from "sanitize-filename";
+import { getCategories, buildDocumentFileName, dateToString } from "./helper.mjs";
 
 /**
  * Make a call to the sevDesk API
@@ -25,10 +26,10 @@ const makeApiCall = (path, apiToken, config = {}) => {
  *
  * @param {Date} startDate
  * @param {Date} endDate
- * @param {string} apiToken
+ * @param {object} options
  * @returns {Array} Voucher objects as defined in sevDesk API
  */
-const getVouchers = async (startDate, endDate, apiToken) => {
+const getVouchers = async (startDate, endDate, { apiToken }) => {
   try {
     const result = await makeApiCall("Voucher", apiToken, {
       params: {
@@ -84,10 +85,10 @@ const getVoucherPositions = async(voucherId, apiToken) => {
  *
  * @param {Date} startPayDate
  * @param {Date} endPayDate
- * @param {string} apiToken
+ * @param {object} options
  * @returns {Array} Invoice objects as defined in sevDesk API
  */
-const getInvoices = async (startPayDate, endPayDate, apiToken) => {
+const getInvoices = async (startPayDate, endPayDate, { apiToken }) => {
   const timeRangeLength = endPayDate.getTime() - startPayDate.getTime();
   const startDate = new Date(startPayDate.getTime() - 2 * timeRangeLength);
   try {
@@ -123,13 +124,14 @@ const getInvoices = async (startPayDate, endPayDate, apiToken) => {
  *
  * @param {string} type of object ("vouchers" or "invoices")
  * @param {Array} vouchers/invoices from API / @see getVouchers
+ * @param {object} options
  * @returns {Array} for each voucher: PDF Buffer Data and meta data (payDate, supplierName, documentId)
  */
-const downloadDocuments = async (objectType, objects, apiToken) => {
+const downloadDocuments = async (objectType, objects, options) => {
   let documents = [];
   try {
     const promises = objects.map((object) => {
-      return downloadDocument(objectType, object, apiToken);
+      return downloadDocument(objectType, object, options);
     });
     documents = await Promise.all(promises);
   } catch (err) {
@@ -144,9 +146,11 @@ const downloadDocuments = async (objectType, objects, apiToken) => {
  *
  * @param {string} type of object ("vouchers" or "invoices")
  * @param {Object} voucher (@see getVouchers) or invoices (@see getInvoices)
+ * @param {object} options
  * @returns {Object} PDF Buffer Data and document name
  */
-const downloadDocument = async (objectType, object, apiToken) => {
+const downloadDocument = async (objectType, object, options) => {
+  const { apiToken } = options;
   try {
     let result = null;
     if (objectType === "vouchers") {
@@ -172,34 +176,42 @@ const downloadDocument = async (objectType, object, apiToken) => {
       content = Buffer.from(content, "base64");
     }
 
-    let extension = "pdf";
-    if(document.filename.split(".").pop() !== document.filename) {
-      extension = document.filename.split(".").pop();
-    }
-
     return {
       document: content,
-      fileName: getDocumentFileName(object, objectType, extension),
+      fileName: getDocumentFileName(object, objectType, options),
     };
   } catch (err) {
     return null;
   }
 };
 
-const getDocumentFileName = (object, objectType, extension = "pdf") => {
+const getDocumentFileName = (object, objectType, options = {}) => {
   const payDate = object.payDate ? new Date(object.payDate) : null;
   let name = "";
+  let extraInfos = "";
+
   if (objectType === "vouchers") {
     name = object.supplierName || object.supplierNameAtSave || "";
   } else if (objectType === "invoices") {
     name = object.addressName || "";
   }
 
-  if(object.document && object.document.extension) {
-    extension = object.document.extension;
+  if (options.extraInfoFilename && object.positions) {
+    extraInfos += getCategories(object.positions);
   }
 
-  let fileName = buildDocumentFileName(payDate, name, object.id, extension);
+  let extension = "pdf";
+  if(object.document) {
+    if(object.document.extension) {
+      extension = object.document.extension;
+    }
+    if(object.document.filename && object.document.filename.split(".").pop() !== object.document.filename) {
+      extension = object.document.filename.split(".").pop();
+    }
+  }
+
+
+  let fileName = buildDocumentFileName(payDate, name, object.id, extraInfos, extension);
   fileName = sanitizeFilename(fileName);
   return fileName;
 }
@@ -209,14 +221,12 @@ const getDocumentFileName = (object, objectType, extension = "pdf") => {
  * to be used in a report/journal
  * 
  * @param {Array} Vouchers from @see getVouchers
+ * @param {object} options
  * @returns {Array} data used for exporting a report
  */
-const buildVoucherReportData = (vouchers) => {
+const buildVoucherReportData = (vouchers, options) => {
   const reportData = [];
   vouchers.forEach(voucher => {
-    const accountingPositions = voucher.positions.map(position => {
-      return position.accountingType.name || "";
-    });
     const payDate = new Date(voucher.payDate);
     reportData.push({
       type: "AR",
@@ -225,8 +235,8 @@ const buildVoucherReportData = (vouchers) => {
       contact: voucher.supplierNameAtSave || voucher.supplierName || voucher.supplier.name || "",
       payDate: payDate,
       paidAmount: voucher.paidAmount,
-      categories: accountingPositions,
-      filename: getDocumentFileName(voucher, "vouchers")
+      categories: getCategories(voucher.positions),
+      filename: getDocumentFileName(voucher, "vouchers", options)
     });
   });
   return reportData;
@@ -237,9 +247,10 @@ const buildVoucherReportData = (vouchers) => {
  * to be used in a report/journal
  * 
  * @param {Array} Invoices from @see getInvoices
+ * @param {object} options
  * @returns {Array} data used for exporting a report
  */
-const buildInvoiceReportData = (invoices) => {
+const buildInvoiceReportData = (invoices, options) => {
   const reportData = [];
   invoices.forEach(invoice => {
     const payDate = new Date(invoice.payDate);
@@ -251,7 +262,7 @@ const buildInvoiceReportData = (invoices) => {
       payDate: payDate,
       paidAmount: invoice.paidAmount,
       categories: [],
-      filename: getDocumentFileName(invoice, "invoices")
+      filename: getDocumentFileName(invoice, "invoices", options)
     });
   });
   return reportData;

@@ -43,7 +43,7 @@ const deleteAllFilesInDirectory = async (directory) => {
  * @param {Object} document from @see downloadDocuments/@see downloadDocument
  * @returns {string} filename
  */
-const buildDocumentFileName = (payDate, name, id, extension = ".pdf") => {
+const buildDocumentFileName = (payDate, name, id, extraInfo, extension = ".pdf") => {
   const filenameParts = [];
   if (payDate) {
     filenameParts.push(dateToString(payDate));
@@ -54,9 +54,26 @@ const buildDocumentFileName = (payDate, name, id, extension = ".pdf") => {
   if (id) {
     filenameParts.push(id); // make it unique
   }
+  if (extraInfo) {
+    filenameParts.push(extraInfo);
+  }
 
   let filename = filenameParts.join("-") + `.${extension}`;
   return filename;
 };
 
-export { dateToString, deleteAllFilesInDirectory, buildDocumentFileName };
+/**
+ * Builds an array of categorie names from voucher positions
+ *
+ * @param {array} positions
+ * @returns
+ */
+const getCategories = (positions) => {
+  const categories = positions.map((position) => {
+    return position.accountingType.name || "";
+  });
+
+  return categories;
+};
+
+export { dateToString, deleteAllFilesInDirectory, buildDocumentFileName, getCategories };

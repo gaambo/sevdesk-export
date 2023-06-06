@@ -38,6 +38,11 @@ const main = async () => {
       false
     )
     .option(
+      "--extra-info-filename",
+      "Speichert zusätzliche Infos (wie Kategorien) in den Dateinamen",
+      false
+    )
+    .option(
       "--api-token",
       "API-Token für sevDesk. Einstellungen > Benutzer > API-Token. Alternativ auch via `.env` möglich",
       process.env.SEVDESK_API_KEY
@@ -56,7 +61,6 @@ const main = async () => {
   const exportDir = options.dir;
   const deletExisting = options.delete;
   const exportReport = options.report;
-  const apiToken = options.apiToken;
 
   const reportData = [];
 
@@ -82,7 +86,7 @@ const main = async () => {
   const getSpinner = ora("Hole Belegdaten von sevDesk").start();
   let vouchers, documents, savedFiles;
   try {
-    vouchers = await getVouchers(startDate, endDate, apiToken);
+    vouchers = await getVouchers(startDate, endDate, options);
     if (!vouchers.length) {
       getSpinner.info("Keine Belege gefunden");
       return;
@@ -95,7 +99,7 @@ const main = async () => {
 
   const downloadSpinner = ora("Lade Beleg-PDFs von sevDesk").start();
   try {
-    documents = await downloadDocuments("vouchers", vouchers, apiToken);
+    documents = await downloadDocuments("vouchers", vouchers, options);
     if (!documents.length) {
       downloadSpinner.info("Keine Beleg-PDFs gefunden");
       return;
@@ -108,7 +112,7 @@ const main = async () => {
 
   const saveSpinner = ora("Speichere Beleg-PDFs im Ordner").start();
   try {
-    savedFiles = await saveDocuments(documents, exportDir);
+    savedFiles = await saveDocuments(documents, options);
     if (!savedFiles.length) {
       saveSpinner.info("Keine Beleg-PDFs gespeichert");
       return;
@@ -125,7 +129,7 @@ const main = async () => {
     ).succeed();
 
     if(exportReport) {
-      const voucherReportData = buildVoucherReportData(vouchers);
+      const voucherReportData = buildVoucherReportData(vouchers, options);
       reportData.push(...voucherReportData);
     }
   }
@@ -136,7 +140,7 @@ const main = async () => {
   const getInvoicesSpinner = ora("Hole Rechnungen von sevDesk").start();
   let invoices, invoiceDocuments, savedInvoiceFiles;
   try {
-    invoices = await getInvoices(startDate, endDate, apiToken);
+    invoices = await getInvoices(startDate, endDate, options);
     if (!invoices.length) {
       getInvoicesSpinner.info("Keine Rechnungen gefunden");
       return;
@@ -151,7 +155,7 @@ const main = async () => {
 
   const downloadInvoicesSpinner = ora("Lade Rechnung-PDFs von sevDesk").start();
   try {
-    invoiceDocuments = await downloadDocuments("invoices", invoices, apiToken);
+    invoiceDocuments = await downloadDocuments("invoices", invoices, options);
     if (!invoiceDocuments.length) {
       downloadInvoicesSpinner.info("Keine Rechnung-PDFs gefunden");
       return;
@@ -166,7 +170,7 @@ const main = async () => {
 
   const saveInvoicesSpinner = ora("Speichere Rechnung-PDFs im Ordner").start();
   try {
-    savedInvoiceFiles = await saveDocuments(invoiceDocuments, exportDir);
+    savedInvoiceFiles = await saveDocuments(invoiceDocuments, options);
     if (!savedInvoiceFiles.length) {
       saveInvoicesSpinner.info("Keine Rechnung-PDFs gespeichert");
       return;
@@ -185,7 +189,7 @@ const main = async () => {
     ).succeed();
 
     if(exportReport) {
-      const invoiceReportData = buildInvoiceReportData(invoices);
+      const invoiceReportData = buildInvoiceReportData(invoices, options);
       reportData.push(...invoiceReportData);
     }
   }
