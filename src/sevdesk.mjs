@@ -1,5 +1,5 @@
 import axios from "axios";
-import { buildDocumentFileName, dateToString } from "./helper.mjs";
+import sanitizeFilename from "sanitize-filename";
 
 /**
  * Make a call to the sevDesk API
@@ -199,7 +199,8 @@ const getDocumentFileName = (object, objectType, extension = "pdf") => {
     extension = object.document.extension;
   }
 
-  const fileName = buildDocumentFileName(payDate, name, object.id, extension);
+  let fileName = buildDocumentFileName(payDate, name, object.id, extension);
+  fileName = sanitizeFilename(fileName);
   return fileName;
 }
 

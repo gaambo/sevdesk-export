@@ -1,7 +1,7 @@
 import { stringify } from "csv-stringify/sync";
 import { promises as fs } from "fs";
 import path from "path";
-import sanitize from "sanitize-filename";
+import sanitizeFilename from "sanitize-filename";
 import { dateToString } from "./helper.mjs";
 
 /**
@@ -31,7 +31,7 @@ const saveDocument = async (document, savePath) => {
   if (!document) {
     return null;
   }
-  const filename = sanitize(document.fileName);
+  const filename = sanitizeFilename(document.fileName);
   try {
     await fs.writeFile(path.join(savePath, filename), document.document);
     return 1;
