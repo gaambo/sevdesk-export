@@ -45,6 +45,11 @@ Dieses Programm steht in keinem Zusammenhang mit sevDesk und wird nicht von sevD
 
 ## Changelog
 
+### v1.3.0
+
+- Sanitize filenames
+- Extra infos (sevDesk Kategorien) in Dateiname (optional via Flag)
+
 ### v1.2.0
 
 - Bericht/Journal-Funktionalität hinzugefügt
