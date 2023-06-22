@@ -2,8 +2,13 @@
 
 Dieses Skript exportiert die Belege von sevDesk für einen gewissen Zeitraum als PDFs.
 Der Zeitraum wird dabei über das `payDate` (also das in sevDesk hinterlegte Zahlungsdatum) eingeschränkt.
-Das ist besonders für Einnahmen-Ausgaben-Rechner nützlich, da hier in der monatlichen Buchhaltung einfach alle Belege die in diesem Monat **bezahlt** wurden exportiert werden können. 
-Die Belege werden als PDF mit den Dateinamen `YYYY-MM-DD-Name-ID.pdf` gespeichert. Durch das Datum ist die Sortierung und Zuordnung zum Kontoauszug einfacher. Der Name ist der Liefernanten- oder Kundenname. Die ID wird für eindeutige Dateinamen verwendet.
+Das ist besonders für Einnahmen-Ausgaben-Rechner nützlich, da hier in der monatlichen Buchhaltung einfach alle Belege, 
+die in diesem Monat **bezahlt** wurden exportiert werden können. 
+Die Belege werden als PDF mit den Dateinamen `YYYY-MM-DD-Name-ID.pdf` gespeichert. 
+Durch das Datum ist die Sortierung und Zuordnung zum Kontoauszug einfacher. 
+Der Name ist der Liefernanten- oder Kundenname. 
+Die ID wird für eindeutige Dateinamen verwendet.
+Die Belege können sowohl im lokalen Filesystem als via WebDAV abgelegt werden.
 
 ## Verwendung
 
@@ -23,10 +28,19 @@ Mit `npm install -g .` kann das Skript global verfügbar gemacht werden und somi
 
 `--start`: Startdatum (YYYY-MM-DD) *(Standard: 1. Tag des letzten Monats)* 
 `--end`: Enddatum (YYYY-MM-DD) *(Standard: Letzter Tag des letzten Monats)* 
-`--dir`: Export-Verzeichnis *(Standard: Verzeichnis "export" im ausführenden Verzeichnis)* 
+`--dir`: Export-Verzeichnis *(Standard: Verzeichnis "export" im ausführenden Verzeichnis)*
 `--delete`: Ob bestehende Dateien im Export-Verzeichnis gelöscht werden sollen *(Standard: Falsch)* 
 `--report`: Ob ein Journal/Report im CSV-Format erstellt werden soll *(Standard: Falsch)* 
 `--api-token`: Der API-Token für sevDesk (siehe [Infos](#sevdesk-api)).
+
+#### WebDAV Parameter
+
+Alle WebDAV Parameter können auch via .env bzw. Environment Parameter übergeben werden.
+
+`--webdav-address`: Die Adresse zum WebDAV. Wenn definiert, wird WebDAV als Filesystem verwendet!
+`--webdav-username`: WebDAV Username
+`--webdav-password`: WebDAV Passwort. Optional, werden Username/Password nicht gesetzt, 
+wird die Verbindung ohne Authentifizierung aufgebaut
 
 ### Beispiel Aufruf: 
 `$ sevdesk-export --start 2022-02-01 --end 2022-02-28 --dir ~/buchhaltung/2022/02 --delete --api-token 1234`

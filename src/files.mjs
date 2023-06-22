@@ -1,20 +1,36 @@
 import { stringify } from "csv-stringify/sync";
-import { promises as fs } from "fs";
+import * as fs from "fs";
 import path from "path";
 import sanitizeFilename from "sanitize-filename";
 import { dateToString } from "./helper.mjs";
+import { createAdapter } from "webdav-fs";
+
+export const getFileSystemProvider = ({ webdavAddress, webdavUsername, webdavPassword }) => {
+  if (webdavAddress) {
+    return createAdapter(
+      webdavAddress,
+      webdavUsername && webdavPassword ? {
+        username: webdavUsername,
+        password: webdavPassword
+      } : undefined
+    );
+  }
+
+  return fs;
+};
 
 /**
  * Saves downloaded voucher/invoice data from @see downloadDocuments to disk
  *
+ * @param {fs} fsProvider
  * @param {Array} document
  * @param {object} options
  * @returns number of saved documents
  */
-const saveDocuments = async (documents, { dir }) => {
+const saveDocuments = async (fsProvider, documents, { dir }) => {
   return Promise.all(
     documents.map((document) => {
-      return saveDocument(document, dir);
+      return saveDocument(fsProvider, document, dir);
     })
   );
 };
@@ -23,17 +39,21 @@ const saveDocuments = async (documents, { dir }) => {
  * Private. Saves a single document
  * @see saveDocuments
  *
+ * @param {fs} fsProvider
  * @param {Object} document
  * @param {string} savePath
  * @returns
  */
-const saveDocument = async (document, savePath) => {
+const saveDocument = async (fsProvider, document, savePath) => {
   if (!document) {
     return null;
   }
   const filename = sanitizeFilename(document.fileName);
   try {
-    await fs.writeFile(path.join(savePath, filename), document.document);
+    await new Promise((resolve, reject) => fsProvider.writeFile(path.join(savePath, filename), document.document, (err) => {
+      if (err) return reject(err);
+      resolve();
+    }));
     return 1;
   } catch (err) {
     return 0;
@@ -42,12 +62,13 @@ const saveDocument = async (document, savePath) => {
 
 /**
  * Writes journal/report data to a csv file
- * 
- * @param {Array} reportData 
- * @param {string} savePath 
- * @returns 
+ *
+ * @package {fs} fsProvider
+ * @param {Array} reportData
+ * @param {string} savePath
+ * @returns
  */
-const writeReportCSV = async(reportData, savePath) => {
+const writeReportCSV = async (fsProvider, reportData, savePath) => {
   const filename = "journal.csv";
 
   const data = reportData.map(entry => {
@@ -56,7 +77,7 @@ const writeReportCSV = async(reportData, savePath) => {
       date: dateToString(entry.date),
       payDate: dateToString(entry.payDate),
       categories: Array.isArray(entry.categories) ? entry.categories.join(", ") : "",
-      paidAmount: entry.paidAmount.toLocaleString("de"),
+      paidAmount: entry.paidAmount.toLocaleString("de")
     };
   });
   const output = stringify(data, {
@@ -93,17 +114,41 @@ const writeReportCSV = async(reportData, savePath) => {
       {
         key: "filename",
         header: "Dateiname"
-      },
+      }
     ]
   });
 
 
   try {
-    await fs.writeFile(path.join(savePath, filename), output);
+    await new Promise((resolve, reject) => fsProvider.writeFile(path.join(savePath, filename), output, (err) => {
+      if (err) return reject(err);
+      resolve();
+    }));
     return 1;
-  } catch(err) {
+  } catch (err) {
     return 0;
   }
 };
 
-export { saveDocuments, writeReportCSV };
+const prepareDirectory = (fsProvider, exportDir) => new Promise((resolve, reject) => {
+  fsProvider.stat(exportDir, (err, stats) => {
+    if (err) {
+      // TODO create recursively
+      return fsProvider.mkdir(exportDir, (err) => {
+        if (err) {
+          reject(err.message);
+        }
+
+        resolve();
+      });
+    }
+
+    if (!stats.isDirectory()) {
+      return reject("Es existiert bereits eine Datei unter dem angegeben Pfad");
+    }
+
+    resolve();
+  });
+});
+
+export { saveDocuments, writeReportCSV, prepareDirectory };

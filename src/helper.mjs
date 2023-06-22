@@ -1,5 +1,6 @@
-import { promises as fs } from "fs";
 import path from "path";
+import { format } from "date-fns";
+import { de } from "date-fns/locale/index.js";
 
 /**
  * Formats a JS-Date to a YYYY-MM-DD string
@@ -19,15 +20,23 @@ const dateToString = (date) => {
  * @param {string} directory
  * @returns {boolean}
  */
-const deleteAllFilesInDirectory = async (directory) => {
+const deleteAllFilesInDirectory = async (fsProvider, directory) => {
   try {
-    const dirEntries = await fs.readdir(directory, { withFileTypes: true });
+    const dirEntries = await new Promise((resolve, reject) => {
+      fsProvider.readdir(directory, { withFileTypes: true }, (err, files) => {
+        if (err) return reject(err);
+        resolve(files);
+      });
+    });
     const files = dirEntries
       .filter((dirEnt) => dirEnt.isFile() && !dirEnt.name.startsWith("."))
       .map((dirEnt) => dirEnt.name);
     await Promise.all(
       files.map((file) => {
-        return fs.unlink(path.join(directory, file));
+        return new Promise((resolve, reject) => fsProvider.unlink(path.join(directory, file, (err) => {
+          if (err) return reject(err);
+          resolve();
+        })));
       })
     );
     return true;
@@ -76,4 +85,8 @@ const getCategories = (positions) => {
   return categories;
 };
 
-export { dateToString, deleteAllFilesInDirectory, buildDocumentFileName, getCategories };
+const customFormat = (date, pattern = "PPP") => {
+  return format(date, pattern, { locale: de });
+};
+
+export { dateToString, deleteAllFilesInDirectory, buildDocumentFileName, getCategories, customFormat };
