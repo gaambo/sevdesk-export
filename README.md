@@ -6,9 +6,9 @@ Das ist besonders für Einnahmen-Ausgaben-Rechner nützlich, da hier in der mona
 die in diesem Monat **bezahlt** wurden exportiert werden können. 
 Die Belege werden als PDF mit den Dateinamen `YYYY-MM-DD-Name-ID.pdf` gespeichert. 
 Durch das Datum ist die Sortierung und Zuordnung zum Kontoauszug einfacher. 
-Der Name ist der Liefernanten- oder Kundenname. 
+Der Name ist der Lieferanten- oder Kundenname. 
 Die ID wird für eindeutige Dateinamen verwendet.
-Die Belege können sowohl im lokalen Filesystem als via WebDAV abgelegt werden.
+Die Belege können sowohl im lokalen Filesystem als auch via WebDAV abgelegt werden.
 
 ## Verwendung
 
@@ -39,8 +39,13 @@ Alle WebDAV Parameter können auch via .env bzw. Environment Parameter übergebe
 
 `--webdav-address`: Die Adresse zum WebDAV. Wenn definiert, wird WebDAV als Filesystem verwendet!
 `--webdav-username`: WebDAV Username
-`--webdav-password`: WebDAV Passwort. Optional, werden Username/Password nicht gesetzt, 
-wird die Verbindung ohne Authentifizierung aufgebaut
+`--webdav-password`: WebDAV Passwort. Optional, werden Username/Password nicht gesetzt, wird die Verbindung ohne Authentifizierung aufgebaut
+`--dir`: Verzeichnis relativ zum Root des WebDav Filesystems. Muss angegeben werden.
+
+**Beispiel für Nextcloud:**
+`--webdav-address`: `https://cloud.example.com/remote.php/dav/files/USERNAME/`
+`--webdav-password`: Application Password
+Siehe [Nextcloud Doku](https://docs.nextcloud.com/server/latest/user_manual/de/files/access_webdav.html).
 
 ### Beispiel Aufruf: 
 `$ sevdesk-export --start 2022-02-01 --end 2022-02-28 --dir ~/buchhaltung/2022/02 --delete --api-token 1234`

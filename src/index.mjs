@@ -31,7 +31,7 @@ const main = async () => {
     .requiredOption(
       "--dir <exportDir>",
       "Verzeichnis in dem die PDFs gespeichert werden sollen",
-      path.join(process.cwd(), "export")
+      process.env.EXPORT_DIR || "export"
     )
     .option(
       "-d, --delete",
@@ -79,9 +79,16 @@ const main = async () => {
   const options = program.opts();
   startDate = new Date(options.start);
   endDate = new Date(options.end);
-  const exportDir = options.dir;
   const deleteExisting = options.delete;
   const exportReport = options.report;
+
+  let exportDir = options.dir;
+  // if (!exportDir.endsWith("/")) {
+  //   exportDir += "/";
+  // }
+  // if (options.webdavAddress && !exportDir.startsWith("/")) {
+  //   exportDir = `/${exportDir}`;
+  // }
 
   const reportData = [];
 
@@ -106,7 +113,12 @@ const main = async () => {
 
   if (deleteExisting) {
     const deleteSpinner = ora("Lösche bestehende Dateien").start();
-    const deleteResult = await deleteAllFilesInDirectory(fileSystemProvider, exportDir);
+    // TODO: does not work with webdav
+    // probably related to https://github.com/perry-mitchell/webdav-client/pull/324
+    const deleteResult = await deleteAllFilesInDirectory(
+      fileSystemProvider,
+      exportDir
+    );
     if (deleteResult) {
       deleteSpinner.succeed();
     } else {

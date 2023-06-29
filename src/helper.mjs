@@ -33,10 +33,10 @@ const deleteAllFilesInDirectory = async (fsProvider, directory) => {
       .map((dirEnt) => dirEnt.name);
     await Promise.all(
       files.map((file) => {
-        return new Promise((resolve, reject) => fsProvider.unlink(path.join(directory, file, (err) => {
+        return new Promise((resolve, reject) => fsProvider.unlink(path.join(directory, file), (err) => {
           if (err) return reject(err);
           resolve();
-        })));
+        }));
       })
     );
     return true;
