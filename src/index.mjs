@@ -1,10 +1,25 @@
 import ora from "ora";
 import { program } from "commander";
 import "dotenv/config";
-import { getVouchers, getInvoices, downloadDocuments, buildVoucherReportData, buildInvoiceReportData } from "./sevdesk.mjs";
-import { dateToString, deleteAllFilesInDirectory } from "./helper.mjs";
+import {
+  getVouchers,
+  getInvoices,
+  downloadDocuments,
+  buildVoucherReportData,
+  buildInvoiceReportData,
+} from "./sevdesk.mjs";
+import {
+  dateToString,
+  deleteAllFilesInDirectory,
+  customFormat,
+} from "./helper.mjs";
 import path from "path";
-import { saveDocuments, writeReportCSV } from "./files.mjs";
+import {
+  getFileSystemProvider,
+  prepareDirectory,
+  saveDocuments,
+  writeReportCSV,
+} from "./files.mjs";
 
 const main = async () => {
   const today = new Date();
@@ -25,7 +40,7 @@ const main = async () => {
     .requiredOption(
       "--dir <exportDir>",
       "Verzeichnis in dem die PDFs gespeichert werden sollen",
-      path.join(process.cwd(), "export")
+      process.env.EXPORT_DIR || "export"
     )
     .option(
       "-d, --delete",
@@ -47,6 +62,21 @@ const main = async () => {
       "API-Token für sevDesk. Einstellungen > Benutzer > API-Token. Alternativ auch via `.env` möglich",
       process.env.SEVDESK_API_KEY
     )
+    .option(
+      "--webdav-address",
+      "Die Adresse unter der das WebDAV Verzeichnis erreichbar ist. Alternativ auch via `.env` möglich",
+      process.env.WEBDAV_ADDRESS
+    )
+    .option(
+      "--webdav-username",
+      "Der WebDav Username. Alternativ auch via `.env` möglich",
+      process.env.WEBDAV_USERNAME
+    )
+    .option(
+      "--webdav-password",
+      "Das WebDav Passwort. Alternativ auch via `.env` möglich",
+      process.env.WEBDAV_PASSWORD
+    )
     .addHelpText(
       "after",
       `\nBeispiel:
@@ -58,19 +88,40 @@ const main = async () => {
   const options = program.opts();
   startDate = new Date(options.start);
   endDate = new Date(options.end);
-  const exportDir = options.dir;
-  const deletExisting = options.delete;
+  const deleteExisting = options.delete;
   const exportReport = options.report;
 
+  let exportDir = options.dir;
+
   const reportData = [];
+
+  /**
+   * Get the fs provider. Can either be local fs or webdav fs wrapper
+   */
+  let fileSystemProvider = getFileSystemProvider(options);
+
+  /**
+   * Prepare directory
+   */
+  try {
+    await prepareDirectory(fileSystemProvider, exportDir);
+  } catch (err) {
+    console.error(
+      `Das Ausgabeverzeichnis ${exportDir} kann nicht verwendet werden: ${err}`
+    );
+    process.exit(1);
+  }
 
   /**
    * 1. delete existing files
    */
 
-  if (deletExisting) {
+  if (deleteExisting) {
     const deleteSpinner = ora("Lösche bestehende Dateien").start();
-    const deleteResult = await deleteAllFilesInDirectory(exportDir);
+    const deleteResult = await deleteAllFilesInDirectory(
+      fileSystemProvider,
+      exportDir
+    );
     if (deleteResult) {
       deleteSpinner.succeed();
     } else {
@@ -83,7 +134,11 @@ const main = async () => {
   /**
    * 2. get, download and save VOUCHERS
    */
-  const getSpinner = ora("Hole Belegdaten von sevDesk").start();
+  const getSpinner = ora(
+    `Hole Belegdaten von sevDesk zwischen ${customFormat(
+      startDate
+    )} und ${customFormat(endDate)}`
+  ).start();
   let vouchers, documents, savedFiles;
   try {
     vouchers = await getVouchers(startDate, endDate, options);
@@ -112,7 +167,7 @@ const main = async () => {
 
   const saveSpinner = ora("Speichere Beleg-PDFs im Ordner").start();
   try {
-    savedFiles = await saveDocuments(documents, options);
+    savedFiles = await saveDocuments(fileSystemProvider, documents, options);
     if (!savedFiles.length) {
       saveSpinner.info("Keine Beleg-PDFs gespeichert");
       return;
@@ -128,7 +183,7 @@ const main = async () => {
       `${savedFiles.length} Belege wurden heruntergeladen und in ${exportDir} gespeichert`
     ).succeed();
 
-    if(exportReport) {
+    if (exportReport) {
       const voucherReportData = buildVoucherReportData(vouchers, options);
       reportData.push(...voucherReportData);
     }
@@ -170,7 +225,11 @@ const main = async () => {
 
   const saveInvoicesSpinner = ora("Speichere Rechnung-PDFs im Ordner").start();
   try {
-    savedInvoiceFiles = await saveDocuments(invoiceDocuments, options);
+    savedInvoiceFiles = await saveDocuments(
+      fileSystemProvider,
+      invoiceDocuments,
+      options
+    );
     if (!savedInvoiceFiles.length) {
       saveInvoicesSpinner.info("Keine Rechnung-PDFs gespeichert");
       return;
@@ -188,14 +247,14 @@ const main = async () => {
       `${savedInvoiceFiles.length} Rechnungen wurden heruntergeladen und in ${exportDir} gespeichert`
     ).succeed();
 
-    if(exportReport) {
+    if (exportReport) {
       const invoiceReportData = buildInvoiceReportData(invoices, options);
       reportData.push(...invoiceReportData);
     }
   }
 
-  if(exportReport) {
-    writeReportCSV(reportData, exportDir);
+  if (exportReport) {
+    writeReportCSV(fileSystemProvider, reportData, exportDir);
     ora(`Journal wurde in journal.csv gespeichert`).succeed();
   }
 };

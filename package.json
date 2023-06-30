@@ -19,10 +19,12 @@
     "axios": "^0.26.0",
     "commander": "^9.0.0",
     "csv-stringify": "^6.2.3",
+    "date-fns": "^2.30.0",
     "dotenv": "^16.0.0",
     "esm": "^3.2.25",
     "ora": "^6.1.0",
-    "sanitize-filename": "^1.6.3"
+    "sanitize-filename": "^1.6.3",
+    "webdav-fs": "^4.0.1"
   },
   "engines": {
     "node": ">=16.0.0"
@@ -35,5 +37,8 @@
   "scripts": {
     "run": "node -r ./bin/index.mjs",
     "debug": "node -r ./src/index.mjs"
+  },
+  "devDependencies": {
+    "prettier": "2.8.8"
   }
 }
