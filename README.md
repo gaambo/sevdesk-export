@@ -2,18 +2,18 @@
 
 Dieses Skript exportiert die Belege von sevDesk für einen gewissen Zeitraum als PDFs.
 Der Zeitraum wird dabei über das `payDate` (also das in sevDesk hinterlegte Zahlungsdatum) eingeschränkt.
-Das ist besonders für Einnahmen-Ausgaben-Rechner nützlich, da hier in der monatlichen Buchhaltung einfach alle Belege, 
-die in diesem Monat **bezahlt** wurden exportiert werden können. 
-Die Belege werden als PDF mit den Dateinamen `YYYY-MM-DD-Name-ID.pdf` gespeichert. 
-Durch das Datum ist die Sortierung und Zuordnung zum Kontoauszug einfacher. 
-Der Name ist der Lieferanten- oder Kundenname. 
+Das ist besonders für Einnahmen-Ausgaben-Rechner nützlich, da hier in der monatlichen Buchhaltung einfach alle Belege,
+die in diesem Monat **bezahlt** wurden exportiert werden können.
+Die Belege werden als PDF mit den Dateinamen `YYYY-MM-DD-Name-ID.pdf` gespeichert.
+Durch das Datum ist die Sortierung und Zuordnung zum Kontoauszug einfacher.
+Der Name ist der Lieferanten- oder Kundenname.
 Die ID wird für eindeutige Dateinamen verwendet.
 Die Belege können sowohl im lokalen Filesystem als auch via WebDAV abgelegt werden.
 
 ## Verwendung
 
-Zum Ausführen wird mindestens NodeJS v16 (mit ES-Module-Support) benötigt. 
-Das Skript bietet via `--help` eine Übersicht über die Parameter. 
+Zum Ausführen wird mindestens NodeJS v16 (mit ES-Module-Support) benötigt.
+Das Skript bietet via `--help` eine Übersicht über die Parameter.
 
 1. `git clone https://github.com/gaambo/sevdesk-export`
 2. `cd sevdesk-export`
@@ -26,11 +26,11 @@ Mit `npm install -g .` kann das Skript global verfügbar gemacht werden und somi
 
 ### Parameter
 
-`--start`: Startdatum (YYYY-MM-DD) *(Standard: 1. Tag des letzten Monats)* 
-`--end`: Enddatum (YYYY-MM-DD) *(Standard: Letzter Tag des letzten Monats)* 
+`--start`: Startdatum (YYYY-MM-DD) *(Standard: 1. Tag des letzten Monats)*
+`--end`: Enddatum (YYYY-MM-DD) *(Standard: Letzter Tag des letzten Monats)*
 `--dir`: Export-Verzeichnis *(Standard: Verzeichnis "export" im ausführenden Verzeichnis)*
-`--delete`: Ob bestehende Dateien im Export-Verzeichnis gelöscht werden sollen *(Standard: Falsch)* 
-`--report`: Ob ein Journal/Report im CSV-Format erstellt werden soll *(Standard: Falsch)* 
+`--delete`: Ob bestehende Dateien im Export-Verzeichnis gelöscht werden sollen *(Standard: Falsch)*
+`--report`: Ob ein Journal/Report im CSV-Format erstellt werden soll *(Standard: Falsch)*
 `--api-token`: Der API-Token für sevDesk (siehe [Infos](#sevdesk-api)).
 
 #### WebDAV Parameter
@@ -47,13 +47,13 @@ Alle WebDAV Parameter können auch via .env bzw. Environment Parameter übergebe
 `--webdav-password`: Application Password
 Siehe [Nextcloud Doku](https://docs.nextcloud.com/server/latest/user_manual/de/files/access_webdav.html).
 
-### Beispiel Aufruf: 
+### Beispiel Aufruf:
 `$ sevdesk-export --start 2022-02-01 --end 2022-02-28 --dir ~/buchhaltung/2022/02 --delete --api-token 1234`
 
 ## sevDesk API
 
 Ein API-Token kann in sevDesk unter `Einstellungen > Benutzer > API-Token` kopiert werden.
-Der API-Token kann bei jedem Aufruf als Parameter übergeben werden oder in der `.env` (siehe `.env.example`) Datei gespeichert werden. 
+Der API-Token kann bei jedem Aufruf als Parameter übergeben werden oder in der `.env` (siehe `.env.example`) Datei gespeichert werden.
 Außerdem kann der API-Token auch als globale Umgebungsvariable gespeichert werden (zB in der `.bashrc` Datei).
 
 ## Rechtliches
@@ -63,6 +63,11 @@ Dieses Programm wird ohne Haftung und Gewährleistung übermittelt. Es werden nu
 Dieses Programm steht in keinem Zusammenhang mit sevDesk und wird nicht von sevDesk entwickelt oder betrieben.
 
 ## Changelog
+
+### v1.4.0
+
+- Added support for WebDAV (eg Nextcloud) - props to @bitperfect-fitzi . See [documentation above](#webdav-parameter).
+- DEV: Added prettier + editorconfig
 
 ### v1.3.0
 
