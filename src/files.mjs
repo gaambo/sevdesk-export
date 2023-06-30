@@ -5,16 +5,22 @@ import sanitizeFilename from "sanitize-filename";
 import { dateToString } from "./helper.mjs";
 import { createAdapter } from "webdav-fs";
 
-export const getFileSystemProvider = ({ webdavAddress, webdavUsername, webdavPassword }) => {
+export const getFileSystemProvider = ({
+  webdavAddress,
+  webdavUsername,
+  webdavPassword,
+}) => {
   if (webdavAddress) {
     const webDavAdapter = createAdapter(
       webdavAddress,
-      webdavUsername && webdavPassword ? {
-        username: webdavUsername,
-        password: webdavPassword
-      } : undefined
+      webdavUsername && webdavPassword
+        ? {
+            username: webdavUsername,
+            password: webdavPassword,
+          }
+        : undefined
     );
-    
+
     return {
       ...webDavAdapter,
       readdir: (dirPath, callback) => {
@@ -24,7 +30,7 @@ export const getFileSystemProvider = ({ webdavAddress, webdavUsername, webdavPas
         // use "stat" so isFile/isDirectory is available on file entries
         // also fixes returning the name of the directory (as in https://github.com/perry-mitchell/webdav-client/pull/324)
         return webDavAdapter.readdir(dirPath, "stat", callback);
-      }
+      },
     };
   }
 
@@ -32,8 +38,8 @@ export const getFileSystemProvider = ({ webdavAddress, webdavUsername, webdavPas
     ...fs,
     readdir: (dirPath, callback) => {
       return fs.readdir(dirPath, { withFileTypes: true }, callback);
-    }
-  }
+    },
+  };
 };
 
 /**
@@ -67,10 +73,16 @@ const saveDocument = async (fsProvider, document, savePath) => {
   }
   const filename = sanitizeFilename(document.fileName);
   try {
-    await new Promise((resolve, reject) => fsProvider.writeFile(path.join(savePath, filename), document.document, (err) => {
-      if (err) return reject(err);
-      resolve();
-    }));
+    await new Promise((resolve, reject) =>
+      fsProvider.writeFile(
+        path.join(savePath, filename),
+        document.document,
+        (err) => {
+          if (err) return reject(err);
+          resolve();
+        }
+      )
+    );
     return 1;
   } catch (err) {
     return 0;
@@ -88,13 +100,15 @@ const saveDocument = async (fsProvider, document, savePath) => {
 const writeReportCSV = async (fsProvider, reportData, savePath) => {
   const filename = "journal.csv";
 
-  const data = reportData.map(entry => {
+  const data = reportData.map((entry) => {
     return {
       ...entry,
       date: dateToString(entry.date),
       payDate: dateToString(entry.payDate),
-      categories: Array.isArray(entry.categories) ? entry.categories.join(", ") : "",
-      paidAmount: entry.paidAmount.toLocaleString("de")
+      categories: Array.isArray(entry.categories)
+        ? entry.categories.join(", ")
+        : "",
+      paidAmount: entry.paidAmount.toLocaleString("de"),
     };
   });
   const output = stringify(data, {
@@ -102,70 +116,74 @@ const writeReportCSV = async (fsProvider, reportData, savePath) => {
     columns: [
       {
         key: "type",
-        header: "Typ"
+        header: "Typ",
       },
       {
         key: "date",
-        header: "Rechnungs-/Belegdatum"
+        header: "Rechnungs-/Belegdatum",
       },
       {
         key: "number",
-        header: "Nummer"
+        header: "Nummer",
       },
       {
         key: "contact",
-        header: "Kunde/Lieferant"
+        header: "Kunde/Lieferant",
       },
       {
         key: "payDate",
-        header: "Zahlung Datum"
+        header: "Zahlung Datum",
       },
       {
         key: "paidAmount",
-        header: "Zahlung Summe"
+        header: "Zahlung Summe",
       },
       {
         key: "categories",
-        header: "Kategorie"
+        header: "Kategorie",
       },
       {
         key: "filename",
-        header: "Dateiname"
-      }
-    ]
+        header: "Dateiname",
+      },
+    ],
   });
 
-
   try {
-    await new Promise((resolve, reject) => fsProvider.writeFile(path.join(savePath, filename), output, (err) => {
-      if (err) return reject(err);
-      resolve();
-    }));
+    await new Promise((resolve, reject) =>
+      fsProvider.writeFile(path.join(savePath, filename), output, (err) => {
+        if (err) return reject(err);
+        resolve();
+      })
+    );
     return 1;
   } catch (err) {
     return 0;
   }
 };
 
-const prepareDirectory = (fsProvider, exportDir) => new Promise((resolve, reject) => {
-  fsProvider.stat(exportDir, (err, stats) => {
-    if (err) {
-      // TODO create recursively
-      return fsProvider.mkdir(exportDir, (err) => {
-        if (err) {
-          reject(err.message);
-        }
+const prepareDirectory = (fsProvider, exportDir) =>
+  new Promise((resolve, reject) => {
+    fsProvider.stat(exportDir, (err, stats) => {
+      if (err) {
+        // TODO create recursively
+        return fsProvider.mkdir(exportDir, (err) => {
+          if (err) {
+            reject(err.message);
+          }
 
-        resolve();
-      });
-    }
+          resolve();
+        });
+      }
 
-    if (!stats.isDirectory()) {
-      return reject("Es existiert bereits eine Datei unter dem angegeben Pfad");
-    }
+      if (!stats.isDirectory()) {
+        return reject(
+          "Es existiert bereits eine Datei unter dem angegeben Pfad"
+        );
+      }
 
-    resolve();
+      resolve();
+    });
   });
-});
 
 export { saveDocuments, writeReportCSV, prepareDirectory };

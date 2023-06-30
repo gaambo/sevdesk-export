@@ -1,6 +1,10 @@
 import axios from "axios";
 import sanitizeFilename from "sanitize-filename";
-import { getCategories, buildDocumentFileName, dateToString } from "./helper.mjs";
+import {
+  getCategories,
+  buildDocumentFileName,
+  dateToString,
+} from "./helper.mjs";
 
 /**
  * Make a call to the sevDesk API
@@ -35,16 +39,18 @@ const getVouchers = async (startDate, endDate, { apiToken }) => {
       params: {
         startPayDate: startDate.getTime() / 1000,
         endPayDate: endDate.getTime() / 1000,
-        embed: "supplier,document"
+        embed: "supplier,document",
       },
     });
-    const vouchers = await Promise.all(result.data.objects.map(async (voucher) => {
-      const positions = await getVoucherPositions(voucher.id, apiToken);
-      return {
-        ...voucher,
-        positions: positions
-      }
-    }));
+    const vouchers = await Promise.all(
+      result.data.objects.map(async (voucher) => {
+        const positions = await getVoucherPositions(voucher.id, apiToken);
+        return {
+          ...voucher,
+          positions: positions,
+        };
+      })
+    );
     return vouchers;
   } catch (err) {
     throw new Error(err.message);
@@ -54,33 +60,33 @@ const getVouchers = async (startDate, endDate, { apiToken }) => {
 /**
  * Returns all voucher positions for a specific voucher
  * including the accounting type information (= buchhaltungskonto)
- * 
- * @param {string} voucherId 
- * @param {string} apiToken 
+ *
+ * @param {string} voucherId
+ * @param {string} apiToken
  * @returns {Array} Voucher position objects as defined in sevDesk API
  */
-const getVoucherPositions = async(voucherId, apiToken) => {
+const getVoucherPositions = async (voucherId, apiToken) => {
   try {
     const result = await makeApiCall("VoucherPos", apiToken, {
-      params:{
+      params: {
         "voucher[id]": voucherId,
         "voucher[objectName]": "Voucher",
-        "embed": "accountingType"
-      }
+        embed: "accountingType",
+      },
     });
     return result.data.objects;
-  } catch(err) {
+  } catch (err) {
     // return empty set
   }
   return [];
-}
+};
 
 /**
  * Returns all invoices in a specific payDate-range
  * sevDesk API does not allow filtering invoices by payDate
  * therefore geht invoices from the range and the range before that
  * and than manually filter by payDate, this should be enough to get most invoices
- * 
+ *
  * include contact data
  *
  * @param {Date} startPayDate
@@ -201,58 +207,70 @@ const getDocumentFileName = (object, objectType, options = {}) => {
   }
 
   let extension = "pdf";
-  if(object.document) {
-    if(object.document.extension) {
+  if (object.document) {
+    if (object.document.extension) {
       extension = object.document.extension;
     }
-    if(object.document.filename && object.document.filename.split(".").pop() !== object.document.filename) {
+    if (
+      object.document.filename &&
+      object.document.filename.split(".").pop() !== object.document.filename
+    ) {
       extension = object.document.filename.split(".").pop();
     }
   }
 
-
-  let fileName = buildDocumentFileName(payDate, name, object.id, extraInfos, extension);
+  let fileName = buildDocumentFileName(
+    payDate,
+    name,
+    object.id,
+    extraInfos,
+    extension
+  );
   fileName = sanitizeFilename(fileName);
   return fileName;
-}
+};
 
 /**
  * Gets information about all vouchers (date, amount, contact name, categories, filename)
  * to be used in a report/journal
- * 
+ *
  * @param {Array} Vouchers from @see getVouchers
  * @param {object} options
  * @returns {Array} data used for exporting a report
  */
 const buildVoucherReportData = (vouchers, options) => {
   const reportData = [];
-  vouchers.forEach(voucher => {
+  vouchers.forEach((voucher) => {
     const payDate = new Date(voucher.payDate);
     reportData.push({
       type: "AR",
       date: new Date(voucher.voucherDate),
       number: voucher.description,
-      contact: voucher.supplierNameAtSave || voucher.supplierName || voucher.supplier.name || "",
+      contact:
+        voucher.supplierNameAtSave ||
+        voucher.supplierName ||
+        voucher.supplier.name ||
+        "",
       payDate: payDate,
       paidAmount: voucher.paidAmount,
       categories: getCategories(voucher.positions),
-      filename: getDocumentFileName(voucher, "vouchers", options)
+      filename: getDocumentFileName(voucher, "vouchers", options),
     });
   });
   return reportData;
-}
+};
 
 /**
  * Gets information about all invoices (date, amount, contact name, categories, filename)
  * to be used in a report/journal
- * 
+ *
  * @param {Array} Invoices from @see getInvoices
  * @param {object} options
  * @returns {Array} data used for exporting a report
  */
 const buildInvoiceReportData = (invoices, options) => {
   const reportData = [];
-  invoices.forEach(invoice => {
+  invoices.forEach((invoice) => {
     const payDate = new Date(invoice.payDate);
     reportData.push({
       type: "ER",
@@ -262,10 +280,16 @@ const buildInvoiceReportData = (invoices, options) => {
       payDate: payDate,
       paidAmount: invoice.paidAmount,
       categories: [],
-      filename: getDocumentFileName(invoice, "invoices", options)
+      filename: getDocumentFileName(invoice, "invoices", options),
     });
   });
   return reportData;
-}
+};
 
-export { getVouchers, getInvoices, downloadDocuments, buildVoucherReportData, buildInvoiceReportData };
+export {
+  getVouchers,
+  getInvoices,
+  downloadDocuments,
+  buildVoucherReportData,
+  buildInvoiceReportData,
+};

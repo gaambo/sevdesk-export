@@ -6,11 +6,20 @@ import {
   getInvoices,
   downloadDocuments,
   buildVoucherReportData,
-  buildInvoiceReportData
+  buildInvoiceReportData,
 } from "./sevdesk.mjs";
-import { dateToString, deleteAllFilesInDirectory, customFormat } from "./helper.mjs";
+import {
+  dateToString,
+  deleteAllFilesInDirectory,
+  customFormat,
+} from "./helper.mjs";
 import path from "path";
-import { getFileSystemProvider, prepareDirectory, saveDocuments, writeReportCSV } from "./files.mjs";
+import {
+  getFileSystemProvider,
+  prepareDirectory,
+  saveDocuments,
+  writeReportCSV,
+} from "./files.mjs";
 
 const main = async () => {
   const today = new Date();
@@ -97,7 +106,9 @@ const main = async () => {
   try {
     await prepareDirectory(fileSystemProvider, exportDir);
   } catch (err) {
-    console.error(`Das Ausgabeverzeichnis ${exportDir} kann nicht verwendet werden: ${err}`);
+    console.error(
+      `Das Ausgabeverzeichnis ${exportDir} kann nicht verwendet werden: ${err}`
+    );
     process.exit(1);
   }
 
@@ -123,7 +134,11 @@ const main = async () => {
   /**
    * 2. get, download and save VOUCHERS
    */
-  const getSpinner = ora(`Hole Belegdaten von sevDesk zwischen ${customFormat(startDate)} und ${customFormat(endDate)}`).start();
+  const getSpinner = ora(
+    `Hole Belegdaten von sevDesk zwischen ${customFormat(
+      startDate
+    )} und ${customFormat(endDate)}`
+  ).start();
   let vouchers, documents, savedFiles;
   try {
     vouchers = await getVouchers(startDate, endDate, options);
@@ -210,7 +225,11 @@ const main = async () => {
 
   const saveInvoicesSpinner = ora("Speichere Rechnung-PDFs im Ordner").start();
   try {
-    savedInvoiceFiles = await saveDocuments(fileSystemProvider, invoiceDocuments, options);
+    savedInvoiceFiles = await saveDocuments(
+      fileSystemProvider,
+      invoiceDocuments,
+      options
+    );
     if (!savedInvoiceFiles.length) {
       saveInvoicesSpinner.info("Keine Rechnung-PDFs gespeichert");
       return;

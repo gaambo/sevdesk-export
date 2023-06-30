@@ -33,10 +33,12 @@ const deleteAllFilesInDirectory = async (fsProvider, directory) => {
       .map((dirEnt) => dirEnt.name);
     await Promise.all(
       files.map((file) => {
-        return new Promise((resolve, reject) => fsProvider.unlink(path.join(directory, file), (err) => {
-          if (err) return reject(err);
-          resolve();
-        }));
+        return new Promise((resolve, reject) =>
+          fsProvider.unlink(path.join(directory, file), (err) => {
+            if (err) return reject(err);
+            resolve();
+          })
+        );
       })
     );
     return true;
@@ -52,7 +54,13 @@ const deleteAllFilesInDirectory = async (fsProvider, directory) => {
  * @param {Object} document from @see downloadDocuments/@see downloadDocument
  * @returns {string} filename
  */
-const buildDocumentFileName = (payDate, name, id, extraInfo, extension = ".pdf") => {
+const buildDocumentFileName = (
+  payDate,
+  name,
+  id,
+  extraInfo,
+  extension = ".pdf"
+) => {
   const filenameParts = [];
   if (payDate) {
     filenameParts.push(dateToString(payDate));
@@ -89,4 +97,10 @@ const customFormat = (date, pattern = "PPP") => {
   return format(date, pattern, { locale: de });
 };
 
-export { dateToString, deleteAllFilesInDirectory, buildDocumentFileName, getCategories, customFormat };
+export {
+  dateToString,
+  deleteAllFilesInDirectory,
+  buildDocumentFileName,
+  getCategories,
+  customFormat,
+};
