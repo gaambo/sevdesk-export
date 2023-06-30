@@ -7,16 +7,33 @@ import { createAdapter } from "webdav-fs";
 
 export const getFileSystemProvider = ({ webdavAddress, webdavUsername, webdavPassword }) => {
   if (webdavAddress) {
-    return createAdapter(
+    const webDavAdapter = createAdapter(
       webdavAddress,
       webdavUsername && webdavPassword ? {
         username: webdavUsername,
         password: webdavPassword
       } : undefined
     );
+    
+    return {
+      ...webDavAdapter,
+      readdir: (dirPath, callback) => {
+        // possible workaround for https://github.com/perry-mitchell/webdav-client/pull/324
+        // dirPath = dirPath.startsWith("/") ? dirPath : `/${dirPath}`;
+
+        // use "stat" so isFile/isDirectory is available on file entries
+        // also fixes returning the name of the directory (as in https://github.com/perry-mitchell/webdav-client/pull/324)
+        return webDavAdapter.readdir(dirPath, "stat", callback);
+      }
+    };
   }
 
-  return fs;
+  return {
+    ...fs,
+    readdir: (dirPath, callback) => {
+      return fs.readdir(dirPath, { withFileTypes: true }, callback);
+    }
+  }
 };
 
 /**

@@ -83,12 +83,6 @@ const main = async () => {
   const exportReport = options.report;
 
   let exportDir = options.dir;
-  // if (!exportDir.endsWith("/")) {
-  //   exportDir += "/";
-  // }
-  // if (options.webdavAddress && !exportDir.startsWith("/")) {
-  //   exportDir = `/${exportDir}`;
-  // }
 
   const reportData = [];
 
@@ -113,8 +107,6 @@ const main = async () => {
 
   if (deleteExisting) {
     const deleteSpinner = ora("Lösche bestehende Dateien").start();
-    // TODO: does not work with webdav
-    // probably related to https://github.com/perry-mitchell/webdav-client/pull/324
     const deleteResult = await deleteAllFilesInDirectory(
       fileSystemProvider,
       exportDir

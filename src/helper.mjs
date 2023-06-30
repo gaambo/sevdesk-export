@@ -23,7 +23,7 @@ const dateToString = (date) => {
 const deleteAllFilesInDirectory = async (fsProvider, directory) => {
   try {
     const dirEntries = await new Promise((resolve, reject) => {
-      fsProvider.readdir(directory, { withFileTypes: true }, (err, files) => {
+      fsProvider.readdir(directory, (err, files) => {
         if (err) return reject(err);
         resolve(files);
       });
