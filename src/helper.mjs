@@ -1,6 +1,6 @@
 import path from "path";
 import { format } from "date-fns";
-import { de } from "date-fns/locale/index.js";
+import { de } from "date-fns/locale/de";
 
 /**
  * Formats a JS-Date to a YYYY-MM-DD string
